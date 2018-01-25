@@ -66,7 +66,7 @@ static PT_THREAD (protothread_BLE(struct pt *pt))
 void main(void)
 {
     mPORTBSetPinsDigitalOut(BIT_8);
-    mPORTBSetBits(BIT_8); //ensures LED is turned off
+    mPORTBClearBits(BIT_8); //ensures LED is turned off
     
     //initialize threads
     PT_setup();
