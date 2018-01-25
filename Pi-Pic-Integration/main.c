@@ -11,7 +11,6 @@
 
 
 static struct pt pt_BLE, pt_keyboard, pt_DMA_output, pt_input, pt_LED;
-char buffer[128];
 
 static char cmd[16];
 volatile int LED_control=0;
