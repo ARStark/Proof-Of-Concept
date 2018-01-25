@@ -1,6 +1,6 @@
 # Pi - Pic Integration
 
-An implemetation of a very simple communication protocol between a Raspberry Pi 3 and PIC32MX250F128B. Currently only supports from Pi to Pic communication. I currently have no need to set up communication the other way but will implement that later.
+An implemetation of a very simple communication protocol between a Raspberry Pi 3 and PIC32MX250F128B. Currently only supports from Pi to Pic communication. I currently have no need to set up communication the other way but I will implement that later.
 
 *Pi-to-Pic.py* is the file that runs on the Raspbeery Pi 3. It uses a Playstation 3 DualShock3 controller to send commands to the Pic over a serial port.
 
