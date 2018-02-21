@@ -1,5 +1,4 @@
 #define LIDAR_ADDR 0x52
-
 #define USE_AND_OR	// To enable AND_OR mask setting for I2C. 
 
 
