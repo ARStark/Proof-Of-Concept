@@ -80,7 +80,7 @@ void main(void)
 {
     
     //Set up LED pins
-    mPORTBSetPinsDigitalOut(YELLOW_LED | RED_LED );
+    mPORTBSetPinsDigitalOut( YELLOW_LED | RED_LED );
     
     /* config the uart, DMA, vref, timer5 ISR */
     PT_setup();
