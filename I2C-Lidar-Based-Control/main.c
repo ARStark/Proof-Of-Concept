@@ -31,9 +31,8 @@
 #define YELLOW_LED BIT_14
 
 
-static struct pt pt_serial, pt_input, pt_DMA_output, pt_sensor, pt_LED;
+static struct pt pt_serial, pt_sensor, pt_LED;
 
-static char cmd[16]; //might not need this will see
 
 static unsigned int distance=0; //global variable for distance sent from sensor;
 
