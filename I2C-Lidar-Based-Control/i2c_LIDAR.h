@@ -14,7 +14,8 @@ void i2c_wait(unsigned int cnt) {
 } //end i2c_wait()
 
 
-// need to verify if this version works for multiple consecutive writes; if it does will delete 16 bit, 32 bit and multi byte register versions
+// need to verify if this version works for multiple consecutive writes; 
+// if it does will delete 16 bit, 32 bit and multi byte register versions.
 // logic taken from balancing robot project -- is slightly modified for VL53L0X
 void i2c_write(char index, char data, int num) {
     char i2c_header[2];
