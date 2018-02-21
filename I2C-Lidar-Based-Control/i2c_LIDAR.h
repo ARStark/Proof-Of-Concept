@@ -1,19 +1,21 @@
+/* MACROS */
 #define LIDAR_ADDR 0x52
 #define USE_AND_OR	// To enable AND_OR mask setting for I2C. 
+/* END MACROS */
 
+/* FUNCTION DEFINITIONS */
 
 // Wait by executing nops
-
 void i2c_wait(unsigned int cnt) {
     while (--cnt) {
         asm( "nop");
         asm( "nop");
     }
-}
+} //end i2c_wait()
 
-// Write a number of registers from data specified by num to the specified address
+
+// need to verify if this version works for multiple consecutive writes; if it does will delete 16 bit, 32 bit and multi byte register versions
 // logic taken from balancing robot project -- is slightly modified for VL53L0X
-
 void i2c_write(char index, char data, int num) {
     char i2c_header[2];
     i2c_header[0] = LIDAR_ADDR | 0; //device address & WR
@@ -38,10 +40,9 @@ void i2c_write(char index, char data, int num) {
 
     StopI2C1(); //Send the Stop condition
     IdleI2C1(); //Wait to complete
-}
+}// end i2c_write()
 
 //modified version of i2c_write to handle 16bit writes 
-
 void i2c_write_16(char index, short data, int num) {
     char i2c_header[2];
     i2c_header[0] = LIDAR_ADDR | 0; //device address & WR
@@ -68,10 +69,9 @@ void i2c_write_16(char index, short data, int num) {
 
     StopI2C1(); //Send the Stop condition
     IdleI2C1(); //Wait to complete
-}
+}// end i2c_write_16()
 
 //modified version of i2c_write to handle 32bit writes 
-
 void i2c_write_32(char index, int data, int num) {
     char i2c_header[2];
     i2c_header[0] = LIDAR_ADDR | 0; //device address & WR
@@ -102,9 +102,10 @@ void i2c_write_32(char index, int data, int num) {
 
     StopI2C1(); //Send the Stop condition
     IdleI2C1(); //Wait to complete
-}
+} // end i2c_write_32()
 
-void i2c_write_multi_reg(char address, char * source, int num_of_regs) {
+//modified version of i2c_write to handle multi byte writes (more than 32 bits)
+void i2c_write_multi_reg(char address, char * source, int num_of_bytes) {
     char i2c_header[2];
     i2c_header[0] = LIDAR_ADDR | 0; //device address & WR
     i2c_header[1] = address; //register address
@@ -113,11 +114,11 @@ void i2c_write_multi_reg(char address, char * source, int num_of_regs) {
     IdleI2C1(); //Wait to complete
 
     int i;
-    for (i = 0; i < num_of_regs + 2; i++) {
+    for (i = 0; i < num_of_bytes + 2; i++) {
         if (i < 2)
             MasterWriteI2C1(i2c_header[i]);
         else
-            while (num_of_regs-- > 0) {
+            while (num_of_bytes-- > 0) {
                 MasterWriteI2C1(*(source++));
             }
 
@@ -131,8 +132,9 @@ void i2c_write_multi_reg(char address, char * source, int num_of_regs) {
 
     StopI2C1(); //Send the Stop condition
     IdleI2C1(); //Wait to complete
-}
+} // end i2c_write_multi_reg()
 
+// logic taken from balancing robot project -- is slightly modified for VL53L0X
 char i2c_read(char address) {
     char i2c_header[2];
     i2c_header[0] = (LIDAR_ADDR | 0); //device address & WR
@@ -140,8 +142,6 @@ char i2c_read(char address) {
 
     StartI2C1(); //Send the Start Bit
     IdleI2C1(); //Wait to complete
-
-
 
     int i;
     for (i = 0; i < 2; i++) {
@@ -174,8 +174,9 @@ char i2c_read(char address) {
     IdleI2C1(); //Wait to complete
 
     return data;
-}
+}//end i2c_read()
 
+//modified version of i2c_read to handle 16bit reads 
 short i2c_read_16(char address) {
     //("here\r\n");
     char i2c_header[2];
@@ -184,8 +185,6 @@ short i2c_read_16(char address) {
 
     StartI2C1(); //Send the Start Bit
     IdleI2C1(); //Wait to complete
-
-
 
     int i;
     for (i = 0; i < 2; i++) {
@@ -222,20 +221,16 @@ short i2c_read_16(char address) {
     IdleI2C1(); //Wait to complete
 
     return data;
-}
+}//end i2c_read_16()
 
-//logic taken from balancing robot project
-// Read a char from the register specified by address
-
-void i2c_read_multi_reg(char address, char * destination, int num_of_regs) {
+//modified version of i2c_read to handle multi byte reads (more than 32 bits)
+void i2c_read_multi_reg(char address, char * destination, int num_of_bytes) {
     char i2c_header[2];
     i2c_header[0] = (LIDAR_ADDR | 0); //device address & WR
     i2c_header[1] = address; //register address
 
     StartI2C1(); //Send the Start Bit
     IdleI2C1(); //Wait to complete
-
-
 
     int i;
     for (i = 0; i < 2; i++) {
@@ -259,7 +254,7 @@ void i2c_read_multi_reg(char address, char * destination, int num_of_regs) {
     IdleI2C1(); //Wait to complete
 
 
-    while (num_of_regs-- > 0) {
+    while (num_of_bytes-- > 0) {
         *(destination++) = MasterReadI2C1();
         IdleI2C1(); //wait to complete
     }
@@ -268,4 +263,6 @@ void i2c_read_multi_reg(char address, char * destination, int num_of_regs) {
     IdleI2C1();
 
     //return data;
-}
+}//end i2c_read_multi_reg()
+
+/* END FUNCTION DEFINITIONS */
