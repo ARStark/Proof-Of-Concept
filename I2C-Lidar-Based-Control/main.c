@@ -55,16 +55,20 @@ static PT_THREAD (protothread_sensor(struct pt *pt))
 {
     PT_BEGIN(pt);
     while(1){
+
         distance = readRangeContinuousMillimeters();
         PT_YIELD_TIME_msec(200);
+
     }//end while(1)
     PT_END(pt);
+
 }//end of pt_sensor
 
 //proof of concept thread; will extend use of distance proximity to sensor to start and stop robot autonomously 
 static PT_THREAD(protothread_LED(struct pt *pt))
 {
     PT_BEGIN(pt);
+
     if(distance == DISTANCE_STATUS_0){mPORTBSetBits(RED_LED);mPORTBClearBits(YELLOW_LED);}
     if(distance == DISTANCE_STATUS_1){mPORTBSetBits(YELLOW_LED);mPORTBClearBits(RED_LED);}
     if(distance == DISTANCE_STATUS_2){mPORTBClearBits(RED_LED);mPORTBClearBits(YELLOW_LED);}
