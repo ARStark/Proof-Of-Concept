@@ -33,7 +33,6 @@
 
 static struct pt pt_serial, pt_sensor, pt_LED;
 
-
 static unsigned int distance=0; //global variable for distance sent from sensor;
 
 /* thread to handle serial communication with terminal application */
