@@ -1,17 +1,28 @@
+/* header files */
+#include "i2c_LIDAR.h" //needed for various i2c read and write functions
+
+/* start function macros */
 #define decodeVcselPeriod(reg_val)      (((reg_val) + 1) << 1)
 #define calcMacroPeriod(vcsel_period_pclks) ((((int)2304 * (vcsel_period_pclks) * 1655) + 500) / 1000)
+/* end function macros*/
 
+/* start variable initialization */
 static int measurement_timing_budget_us;
 
 char stopFlag;
 
+// start of Step Enable variables; used to be a struct but wasn't working; didnt' feel like debugging issue
 char tcc, msrc, dss, pre_range, final_range;
+// end of Step Enable variables
 
+// start of Step Timeout variables; used to be a struct but wasn't working; didnt' feel like debugging issue
 short pre_range_vcsel_period_pclks, final_range_vcsel_period_pclks;
-
 short msrc_dss_tcc_mclks, pre_range_mclks, final_range_mclks;
-
 int msrc_dss_tcc_us, pre_range_us, final_range_us;
+// end of Step Timeout variables
+/* end variable initialization */
+
+/* start function definintions*/
 
 int setSignalRateLimit(float limit_mcps) {
     if (limit_mcps < 0 || limit_mcps > 511.99) {
@@ -23,7 +34,7 @@ int setSignalRateLimit(float limit_mcps) {
     //writeReg16Bit(FINAL_RANGE_CONFIG_MIN_COUNT_RATE_RTN_LIMIT, limit_Mcps * (1 << 7));
     return 1;
 
-}
+} //end setSignalRateLimit()
 
 void getSequenceStepEnables() {
     char sequence_config = i2c_read(0x01);
@@ -33,29 +44,7 @@ void getSequenceStepEnables() {
     msrc = (sequence_config >> 2) & 0x1;
     pre_range = (sequence_config >> 6) & 0x1;
     final_range = (sequence_config >> 7) & 0x1;
-}
-
-char getVcselPulsePeriod(int type) {
-    if (type == 0) {
-        return decodeVcselPeriod(i2c_read(0x50));
-    } else if (type == 1) {
-        return decodeVcselPeriod(i2c_read(0x70));
-    } else {
-        return 255;
-    }
-}
-
-short decodeTimeout(short reg_val) {
-    // format: "(LSByte * 2^MSByte) + 1"
-    return (short) ((reg_val & 0x00FF) <<
-            (short) ((reg_val & 0xFF00) >> 8)) + 1;
-}
-
-int timeoutMclksToMicroseconds(short timeout_period_mclks, char vcsel_period_pclks) {
-    int macro_period_ns = calcMacroPeriod(vcsel_period_pclks);
-
-    return ((timeout_period_mclks * macro_period_ns) + (macro_period_ns / 2)) / 1000;
-}
+} //end getSequenceStepEnables()
 
 void getSequenceStepTimeouts() {
     pre_range_vcsel_period_pclks = getVcselPulsePeriod(0);
@@ -81,47 +70,23 @@ void getSequenceStepTimeouts() {
     final_range_us =
             timeoutMclksToMicroseconds(final_range_mclks,
             final_range_vcsel_period_pclks);
-}
+}// getSequenceStepTimeouts()
 
-void getSpadInfo(char * count, char * type_is_aperture) {
-    char tmp;
+char getVcselPulsePeriod(int type) {
+    if (type == 0) {
+        return decodeVcselPeriod(i2c_read(0x50));
+    } else if (type == 1) {
+        return decodeVcselPeriod(i2c_read(0x70));
+    } else {
+        return 255;
+    }
+} //end getVcselPulsePeriod()
 
-    i2c_write(0x80, 0x01, 1);
-    i2c_write(0xFF, 0x01, 1);
-    i2c_write(0x00, 0x00, 1);
-
-    i2c_write(0xFF, 0x06, 1);
-    i2c_write(0x83, i2c_read(0x83) | 0x04, 1);
-    i2c_write(0xFF, 0x07, 1);
-    i2c_write(0x81, 0x01, 1);
-
-    i2c_write(0x80, 0x01, 1);
-
-    i2c_write(0x94, 0x6b, 1);
-    i2c_write(0x83, 0x00, 1);
-
-    i2c_read(0x83); // may not need
-    i2c_write(0x83, 0x01, 1);
-
-    tmp = i2c_read(0x92);
-    *count = tmp & 0x7f;
-    *type_is_aperture = (tmp >> 7) & 0x01; // 1 true; 0 false;
-
-    i2c_write(0x81, 0x00, 1);
-    i2c_write(0xFF, 0x06, 1);
-    i2c_write(0x83, i2c_read(0x83) & ~0x04, 1);
-    i2c_write(0xFF, 0x01, 1);
-    i2c_write(0x00, 0x01, 1);
-
-    i2c_write(0xFF, 0x00, 1);
-    i2c_write(0x80, 0x00, 1);
-}//end getSpadInfo())
-
-int timeoutMicrosecondsToMclks(int timeout_period_us, char vcsel_period_pclks) {
-    int macro_period_ns = calcMacroPeriod(vcsel_period_pclks);
-
-    return (((timeout_period_us * 1000) + (macro_period_ns / 2)) / macro_period_ns);
-}
+short decodeTimeout(short reg_val) {
+    // format: "(LSByte * 2^MSByte) + 1"
+    return (short) ((reg_val & 0x00FF) <<
+            (short) ((reg_val & 0xFF00) >> 8)) + 1;
+} //end decodeTimeout()
 
 short encodeTimeout(short timeout_mclks) {
     // format: "(LSByte * 2^MSByte) + 1"
@@ -141,7 +106,19 @@ short encodeTimeout(short timeout_mclks) {
     } else {
         return 0;
     }
-}
+}// end encodeTimeout()
+
+int timeoutMclksToMicroseconds(short timeout_period_mclks, char vcsel_period_pclks) {
+    int macro_period_ns = calcMacroPeriod(vcsel_period_pclks);
+
+    return ((timeout_period_mclks * macro_period_ns) + (macro_period_ns / 2)) / 1000;
+} //end timeoutMclksToMicroseconds()
+
+int timeoutMicrosecondsToMclks(int timeout_period_us, char vcsel_period_pclks) {
+    int macro_period_ns = calcMacroPeriod(vcsel_period_pclks);
+
+    return (((timeout_period_us * 1000) + (macro_period_ns / 2)) / macro_period_ns);
+}// end timeoutMicrosecondsToMclks()
 
 int getMeasurementTimingBudget(void) {
     //SequenceStepEnables enables;
@@ -181,11 +158,9 @@ int getMeasurementTimingBudget(void) {
 
     measurement_timing_budget_us = budget_us; // store for internal reuse
     return budget_us;
-}
+} //end getMeasurementTimingBudget()
 
 char setMeasurementTimingBudget(int budget_us) {
-    //  SequenceStepEnables enables;
-    //SequenceStepTimeouts timeouts;
 
     short const StartOverhead = 1320; // note that this is different than the value in get_
     short const EndOverhead = 960;
@@ -223,26 +198,12 @@ char setMeasurementTimingBudget(int budget_us) {
     if (final_range) {
         used_budget_us += FinalRangeOverhead;
 
-        // "Note that the final range timeout is determined by the timing
-        // budget and the sum of all other timeouts within the sequence.
-        // If there is no room for the final range timeout, then an error
-        // will be set. Otherwise the remaining time will be applied to
-        // the final range."
-
         if (used_budget_us > budget_us) {
             // "Requested timeout too big."
             return 0;
         }
 
         int final_range_timeout_us = budget_us - used_budget_us;
-
-        // set_sequence_step_timeout() begin
-        // (SequenceStepId == VL53L0X_SEQUENCESTEP_FINAL_RANGE)
-
-        // "For the final range timeout, the pre-range timeout
-        //  must be added. To do this both final and pre-range
-        //  timeouts must be expressed in macro periods MClks
-        //  because they have different vcsel periods."
 
         short final_range_timeout_mclks =
                 timeoutMicrosecondsToMclks(final_range_timeout_us,
@@ -255,65 +216,54 @@ char setMeasurementTimingBudget(int budget_us) {
         i2c_write_16(0x71,
                 encodeTimeout(final_range_timeout_mclks), 2);
 
-        // set_sequence_step_timeout() end
-
         measurement_timing_budget_us = budget_us; // store for internal reuse
     }
     return 1;
-}
+} //end setMeasurementTimingBudget()
 
-void performSingleRefCalibration(uint8_t vhv_init_byte) {
-    i2c_write(0x00, 0x01 | vhv_init_byte, 1); // VL53L0X_REG_SYSRANGE_MODE_START_STOP
+void performSingleRefCalibration(char vhv_init_byte) {
+    i2c_write(0x00, 0x01 | vhv_init_byte, 1); 
 
 
     i2c_write(0x0B, 0x01, 1);
 
     i2c_write(0x00, 0x00, 1);
 
-}
+} //end performSingleRefCalibration()
 
-void startContinousReadings(int period_ms) {
+void getSpadInfo(char * count, char * type_is_aperture) {
+    char tmp;
+
     i2c_write(0x80, 0x01, 1);
     i2c_write(0xFF, 0x01, 1);
     i2c_write(0x00, 0x00, 1);
-    i2c_write(0x91, stopFlag, 1);
+
+    i2c_write(0xFF, 0x06, 1);
+    i2c_write(0x83, i2c_read(0x83) | 0x04, 1);
+    i2c_write(0xFF, 0x07, 1);
+    i2c_write(0x81, 0x01, 1);
+
+    i2c_write(0x80, 0x01, 1);
+
+    i2c_write(0x94, 0x6b, 1);
+    i2c_write(0x83, 0x00, 1);
+
+    i2c_read(0x83); // may not need
+    i2c_write(0x83, 0x01, 1);
+
+    tmp = i2c_read(0x92);
+    *count = tmp & 0x7f;
+    *type_is_aperture = (tmp >> 7) & 0x01; // 1 true; 0 false;
+
+    i2c_write(0x81, 0x00, 1);
+    i2c_write(0xFF, 0x06, 1);
+    i2c_write(0x83, i2c_read(0x83) & ~0x04, 1);
+    i2c_write(0xFF, 0x01, 1);
     i2c_write(0x00, 0x01, 1);
+
     i2c_write(0xFF, 0x00, 1);
     i2c_write(0x80, 0x00, 1);
-
-    if (period_ms != 0) {
-        // continuous timed mode
-
-        // VL53L0X_SetInterMeasurementPeriodMilliSeconds() begin
-
-        short osc_calibrate_val = i2c_read_16(0xF8);
-
-        if (osc_calibrate_val != 0) {
-            period_ms *= osc_calibrate_val;
-        }
-
-        i2c_write_32(0x04, period_ms, 4);
-
-        // VL53L0X_SetInterMeasurementPeriodMilliSeconds() end
-
-        i2c_write(0x00, 0x04, 1); // VL53L0X_REG_SYSRANGE_MODE_TIMED
-    } else {
-        // continuous back-to-back mode
-        i2c_write(0x00, 0x02, 1); // VL53L0X_REG_SYSRANGE_MODE_BACKTOBACK
-    }
-}
-
-short readRangeContinuousMillimeters(void) {
-
-    while ((i2c_read(0x13) & 0x07) == 0) {
-    }
-    // assumptions: Linearity Corrective Gain is 1000 (default);
-    // fractional ranging is not enabled
-    short range = i2c_read_16(0x14);
-
-    i2c_write(0x0B, 0x01, 1);
-    return range;
-}
+}//end getSpadInfo())
 
 void sensor_initialize() {
     //begin dataInit())
@@ -334,11 +284,9 @@ void sensor_initialize() {
     i2c_write(0x01, 0xFF, 1);
     //end dataInit())
 
-
-
-
-
     // start staticInit()
+    
+    // set_reference_spads() begins
     char spad_count;
     char spad_type_is_aperture;
     getSpadInfo(&spad_count, &spad_type_is_aperture);
@@ -361,11 +309,11 @@ void sensor_initialize() {
             spads_enabled++;
         }
     }
-
+    
     i2c_write_multi_reg(0xB0, ref_spad_map, 6);
     // set_reference_spads() ends
 
-    // load tuning begins
+    // set_load_tuning() begins
     i2c_write(0xFF, 0x01, 1);
     i2c_write(0x00, 0x00, 1);
 
@@ -460,12 +408,13 @@ void sensor_initialize() {
     i2c_write(0xFF, 0x00, 1);
     i2c_write(0x80, 0x00, 1);
 
-    // load tuning ends
-    //set GPIO begin
+    // set_load_tuning() ends
+    
+    //set_GPIO() begin
     i2c_write(0x0A, 0x04, 1);
     i2c_write(0x84, i2c_read(0x84) & ~0x10, 1); // active low
     i2c_write(0x0B, 0x01, 1);
-    //set GPIO end
+    //set_GPIO() end
 
     measurement_timing_budget_us = getMeasurementTimingBudget();
 
@@ -476,5 +425,46 @@ void sensor_initialize() {
     i2c_write(0x01, 0x02, 1);
     performSingleRefCalibration(0x00);
     i2c_write(0x01, 0xE8, 1);
-}
+    
+    //end static_init()
+}// end sensor_initialize()
 
+void startContinuousReadings(int period_ms) {
+    i2c_write(0x80, 0x01, 1);
+    i2c_write(0xFF, 0x01, 1);
+    i2c_write(0x00, 0x00, 1);
+    i2c_write(0x91, stopFlag, 1);
+    i2c_write(0x00, 0x01, 1);
+    i2c_write(0xFF, 0x00, 1);
+    i2c_write(0x80, 0x00, 1);
+
+    if (period_ms != 0) {
+        // continuous timed mode
+
+        short osc_calibrate_val = i2c_read_16(0xF8);
+
+        if (osc_calibrate_val != 0) {
+            period_ms *= osc_calibrate_val;
+        }
+
+        i2c_write_32(0x04, period_ms, 4);
+
+        i2c_write(0x00, 0x04, 1);
+    } else {
+        // continuous back-to-back mode
+        i2c_write(0x00, 0x02, 1); 
+    }
+} //end startContinuousReadings()
+
+short readRangeContinuousMillimeters(void) {
+
+    while ((i2c_read(0x13) & 0x07) == 0) {
+    }
+    // assumptions: Linearity Corrective Gain is 1000 (default);
+    // fractional ranging is not enabled
+    short range = i2c_read_16(0x14);
+
+    i2c_write(0x0B, 0x01, 1);
+    return range;
+} //end readRangeContinuousMillimeters()
+/* end function definitions */
