@@ -1,3 +1,7 @@
+/**
+Will be making a general version to work with all I2C peripherals soon. Will also rewrite or edit a few functions. 
+*/
+
 #define LIDAR_ADDR 0x52
 
 #define USE_AND_OR	// To enable AND_OR mask setting for I2C. 
