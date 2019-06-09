@@ -26,5 +26,5 @@ def formatLampCommand():
 
     if lc.lampStatus == 0:
         return "lamp off:"
-    elif lampStatus == 1:
+    elif lc.lampStatus == 1:
         return "lamp on:"
